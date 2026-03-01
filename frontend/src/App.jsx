@@ -48,14 +48,39 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-8">
 
-          {/* Navigation Tabs */}
-          {!searchQuery && (
-            <Navigation
-              categories={CATEGORIES}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-          )}
+          {/* Navigation Tabs and Actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            {!searchQuery && (
+              <Navigation
+                categories={CATEGORIES}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            )}
+
+            {/* Refresh News Button */}
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('http://localhost:8000/api/news/refresh', {
+                    method: 'POST',
+                  });
+                  if (res.ok) {
+                    // Temporarily show success state or trigger a TanStack Query invalidate 
+                    // if you want the feed to auto-update after the backend is done fetching.
+                    alert("News refresh triggered in the background!");
+                  }
+                } catch (error) {
+                  console.error("Failed to refresh news:", error);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg text-sm font-medium transition-colors border border-zinc-700 hover:border-zinc-600 shadow-sm"
+              title="Fetch latest OSINT data from sources"
+            >
+              <Globe className="w-4 h-4" />
+              <span>Refresh News</span>
+            </button>
+          </div>
 
           {searchQuery && (
             <div className="flex items-center gap-2 mb-4">
