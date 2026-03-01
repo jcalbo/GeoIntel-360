@@ -33,23 +33,23 @@ export default function AnalysisModal({ article, onClose }) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                    className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[85vh]"
+                    className="relative w-full max-w-2xl bg-bg-base border border-border-subtle rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[85vh] transition-colors duration-300"
                 >
                     {/* Header */}
-                    <div className="flex items-start justify-between p-5 md:p-6 border-b border-zinc-900 bg-zinc-900/30">
+                    <div className="flex items-start justify-between p-5 md:p-6 border-b border-border-subtle bg-bg-surface/30">
                         <div className="flex gap-3 items-center pr-8">
                             <div className="p-2 bg-accent-purple/10 text-accent-purple rounded-xl border border-accent-purple/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]">
                                 <BrainCircuit className="w-5 h-5" />
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold leading-tight">AI Executive Summary</h3>
-                                <p className="text-xs text-zinc-500 font-mono mt-0.5">TARGET_ID: {article.id.substring(0, 8).toUpperCase()}</p>
+                                <p className="text-xs text-text-muted font-mono mt-0.5">TARGET_ID: {article.id.substring(0, 8).toUpperCase()}</p>
                             </div>
                         </div>
 
                         <button
                             onClick={onClose}
-                            className="absolute top-5 right-5 p-2 text-zinc-500 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="absolute top-5 right-5 p-2 text-text-muted hover:text-text-base bg-bg-surface hover:bg-bg-element rounded-lg transition-colors border border-transparent hover:border-border-element"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -57,13 +57,13 @@ export default function AnalysisModal({ article, onClose }) {
 
                     {/* Content Body */}
                     <div className="p-6 overflow-y-auto">
-                        <h4 className="text-base font-semibold mb-6 flex gap-2 items-center text-zinc-300">
-                            <div className="w-1 h-4 bg-zinc-700 rounded-full" />
+                        <h4 className="text-base font-semibold mb-6 flex gap-2 items-center text-text-base">
+                            <div className="w-1 h-4 bg-border-element rounded-full" />
                             {article.title}
                         </h4>
 
                         {isLoading ? (
-                            <div className="py-8 flex flex-col items-center justify-center gap-4 text-zinc-500 mt-4 rounded-xl border border-zinc-800/50 bg-zinc-900/10">
+                            <div className="py-8 flex flex-col items-center justify-center gap-4 text-text-muted mt-4 rounded-xl border border-border-subtle bg-bg-surface/10">
                                 <Activity className="w-8 h-8 animate-pulse text-accent-purple/50" />
                                 <span className="text-sm font-mono tracking-widest animate-pulse">GENERATING_ANALYSIS...</span>
                             </div>
@@ -72,11 +72,9 @@ export default function AnalysisModal({ article, onClose }) {
                                 Failed to execute neural summarization. Disconnected from AI cluster.
                             </div>
                         ) : (
-                            <div className="prose prose-invert prose-p:text-sm prose-li:text-sm prose-zinc max-w-none prose-li:marker:text-accent-purple/70">
+                            <div className="prose prose-p:text-sm prose-li:text-sm max-w-none prose-li:marker:text-accent-purple/70">
                                 <div
-                                    className="space-y-4 whitespace-pre-wrap leading-relaxed text-zinc-300"
-                                // Use dangerouslySetInnerHTML if markdown is fully parsed,
-                                // or rely on whitespace-pre-wrap for raw text output from the LLM
+                                    className="space-y-4 whitespace-pre-wrap leading-relaxed text-text-base"
                                 >
                                     {data?.summary}
                                 </div>

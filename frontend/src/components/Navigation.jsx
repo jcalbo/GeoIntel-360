@@ -10,7 +10,7 @@ export function cn(...inputs) {
 
 export default function Navigation({ categories, activeTab, setActiveTab }) {
     return (
-        <div className="flex flex-wrap gap-2 md:gap-4 p-2 bg-zinc-900/50 rounded-2xl w-fit border border-zinc-800/50">
+        <div className="flex flex-wrap gap-2 md:gap-4 p-2 bg-bg-surface/50 rounded-2xl w-fit border border-border-subtle/50 transition-colors duration-300">
             {categories.map((cat) => {
                 const Icon = cat.icon;
                 const isActive = activeTab === cat.id;
@@ -21,13 +21,13 @@ export default function Navigation({ categories, activeTab, setActiveTab }) {
                         onClick={() => setActiveTab(cat.id)}
                         className={cn(
                             "relative px-4 py-3 md:px-6 md:py-3 rounded-xl flex items-center gap-2 text-sm font-medium transition-colors",
-                            isActive ? "text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                            isActive ? "text-text-base" : "text-text-muted hover:text-text-base hover:bg-bg-element/50"
                         )}
                     >
                         {isActive && (
                             <motion.div
                                 layoutId="active-tab"
-                                className="absolute inset-0 bg-zinc-800 rounded-xl"
+                                className="absolute inset-0 bg-bg-element rounded-xl"
                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                             />
                         )}

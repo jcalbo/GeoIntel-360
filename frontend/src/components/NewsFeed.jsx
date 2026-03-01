@@ -42,12 +42,12 @@ export default function NewsFeed({ category, searchQuery, onRequestAnalysis }) {
 
     if (articles.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-32 text-zinc-500 gap-6">
-                <div className="p-6 bg-zinc-900/50 rounded-full border border-zinc-800">
+            <div className="flex flex-col items-center justify-center py-32 text-text-muted gap-6">
+                <div className="p-6 bg-bg-surface/50 rounded-full border border-border-subtle">
                     <Database className="w-12 h-12 opacity-50" />
                 </div>
                 <div className="text-center">
-                    <h3 className="text-xl font-medium text-zinc-300 mb-2">No Intelligence Gathered</h3>
+                    <h3 className="text-xl font-medium text-text-base mb-2">No Intelligence Gathered</h3>
                     <p className="max-w-md text-sm leading-relaxed">
                         The data lake returned an empty subset for {isSearch ? `"${searchQuery}"` : category}. Dispatch backend refresh commands to ingest new feeds.
                     </p>

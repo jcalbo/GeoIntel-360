@@ -1,31 +1,75 @@
 @import "tailwindcss";
 
 @theme {
-  --color-zinc-950: #09090b;
-  --color-zinc-900: #18181b;
-  --color-zinc-800: #27272a;
-  --color-zinc-100: #f4f4f5;
+  --color-bg-base: var(--theme-bg-base);
+  --color-bg-surface: var(--theme-bg-surface);
+  --color-bg-element: var(--theme-bg-element);
+  --color-bg-element-hover: var(--theme-bg-element-hover);
+
+  --color-text-base: var(--theme-text-base);
+  --color-text-muted: var(--theme-text-muted);
+
+  --color-border-subtle: var(--theme-border-subtle);
+  --color-border-element: var(--theme-border-element);
+
   --color-accent-blue: #3b82f6;
   --color-accent-purple: #8b5cf6;
   --color-accent-emerald: #10b981;
 }
 
-body {
-  @apply bg-zinc-950 text-zinc-100 antialiased selection:bg-accent-blue selection:text-white;
+:root {
+  /* Dark Theme (Default) */
+  --theme-bg-base: #09090b;
+  --theme-bg-surface: #18181b;
+  --theme-bg-element: #27272a;
+  --theme-bg-element-hover: #3f3f46;
+  --theme-text-base: #f4f4f5;
+  --theme-text-muted: #a1a1aa;
+  --theme-border-subtle: #27272a;
+  --theme-border-element: #3f3f46;
 }
 
-/* Custom Scrollbar for Intelligence Command Center feel */
+[data-theme='light'] {
+  --theme-bg-base: #f8fafc;
+  --theme-bg-surface: #ffffff;
+  --theme-bg-element: #e2e8f0;
+  --theme-bg-element-hover: #cbd5e1;
+  --theme-text-base: #0f172a;
+  --theme-text-muted: #64748b;
+  --theme-border-subtle: #e2e8f0;
+  --theme-border-element: #cbd5e1;
+}
+
+[data-theme='grey'] {
+  --theme-bg-base: #1f2937;
+  --theme-bg-surface: #374151;
+  --theme-bg-element: #4b5563;
+  --theme-bg-element-hover: #6b7280;
+  --theme-text-base: #f9fafb;
+  --theme-text-muted: #9ca3af;
+  --theme-border-subtle: #4b5563;
+  --theme-border-element: #6b7280;
+}
+
+body {
+  @apply bg-bg-base text-text-base antialiased selection:bg-accent-blue selection:text-white transition-colors duration-300;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--color-zinc-950);
+  background: var(--theme-bg-base);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--color-zinc-800);
+  background: var(--theme-bg-element);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-zinc-700);
+  background: var(--theme-bg-element-hover);
 }

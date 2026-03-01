@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ShieldAlert, Globe, TrendingUp, Search } from 'lucide-react';
 import Navigation from './components/Navigation';
@@ -18,6 +18,12 @@ function App() {
   const [activeTab, setActiveTab] = useState(CATEGORIES[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [analysisArticle, setAnalysisArticle] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -27,20 +33,27 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+      <div className="min-h-screen bg-bg-base text-text-base flex flex-col font-sans transition-colors duration-300">
 
         {/* Top App Bar */}
-        <header className="sticky top-0 z-40 bg-zinc-900/80 backdrop-blur-md border-b border-zinc-800 shadow-sm">
+        <header className="sticky top-0 z-40 bg-bg-surface/80 backdrop-blur-md border-b border-border-subtle shadow-sm transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-zinc-700 to-zinc-900 border border-zinc-700 flex items-center justify-center">
-                <ShieldAlert className="w-5 h-5 text-zinc-100" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-bg-element to-bg-surface border border-border-element flex items-center justify-center">
+                <ShieldAlert className="w-5 h-5 text-text-base" />
               </div>
               <h1 className="text-xl font-bold tracking-tight hidden sm:block">GeoIntel-360</h1>
             </div>
 
-            <div className="flex-1 max-w-2xl">
+            <div className="flex-1 max-w-2xl flex items-center gap-4">
               <SearchBar onSearch={handleSearch} />
+
+              {/* Theme Switcher */}
+              <div className="hidden md:flex items-center p-1 bg-bg-element rounded-lg border border-border-element">
+                <button onClick={() => setTheme('dark')} className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${theme === 'dark' ? 'bg-bg-element-hover text-text-base shadow-sm' : 'text-text-muted hover:text-text-base'}`}>Dark</button>
+                <button onClick={() => setTheme('light')} className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${theme === 'light' ? 'bg-bg-element-hover text-text-base shadow-sm' : 'text-text-muted hover:text-text-base'}`}>Daylight</button>
+                <button onClick={() => setTheme('grey')} className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${theme === 'grey' ? 'bg-bg-element-hover text-text-base shadow-sm' : 'text-text-muted hover:text-text-base'}`}>Grey</button>
+              </div>
             </div>
           </div>
         </header>
@@ -66,15 +79,13 @@ function App() {
                     method: 'POST',
                   });
                   if (res.ok) {
-                    // Temporarily show success state or trigger a TanStack Query invalidate 
-                    // if you want the feed to auto-update after the backend is done fetching.
                     alert("News refresh triggered in the background!");
                   }
                 } catch (error) {
                   console.error("Failed to refresh news:", error);
                 }
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg text-sm font-medium transition-colors border border-zinc-700 hover:border-zinc-600 shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-bg-element hover:bg-bg-element-hover text-text-base rounded-lg text-sm font-medium transition-colors border border-border-element hover:border-border-subtle shadow-sm"
               title="Fetch latest OSINT data from sources"
             >
               <Globe className="w-4 h-4" />
@@ -84,11 +95,11 @@ function App() {
 
           {searchQuery && (
             <div className="flex items-center gap-2 mb-4">
-              <Search className="w-5 h-5 text-zinc-400" />
+              <Search className="w-5 h-5 text-text-muted" />
               <h2 className="text-xl font-semibold">Search Results for "{searchQuery}"</h2>
               <button
                 onClick={() => handleSearch('')}
-                className="ml-auto text-sm text-zinc-400 hover:text-zinc-100 transition-colors"
+                className="ml-auto text-sm text-text-muted hover:text-text-base transition-colors"
               >
                 Clear Search
               </button>
