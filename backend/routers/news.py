@@ -4,6 +4,13 @@ from typing import List, Optional
 from database import get_es_client, INDEX_NAME
 from services.fetcher import fetch_all_categories
 from services.processor import process_and_store_articles
+from services.mcp_client import (
+    get_internet_traffic_summary,
+    get_global_outages,
+    get_attack_summary,
+)
+from services.intelligence_correlator import get_correlated_threat_intelligence
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -73,3 +80,48 @@ async def search_news(q: str = Query(..., min_length=2), limit: int = 20):
     except Exception as e:
         logger.error(f"Error searching ES: {e}")
         return {"total": 0, "articles": []}
+
+
+@router.get("/radar")
+async def get_radar_intelligence():
+    """
+    Fetch real-time Cloudflare Radar intelligence:
+    global internet traffic, active outages, and DDoS/attack trends.
+    All three calls run concurrently.
+    """
+    try:
+        traffic, outages, attacks = await asyncio.gather(
+            get_internet_traffic_summary(),
+            get_global_outages(),
+            get_attack_summary(),
+            return_exceptions=True,
+        )
+        return {
+            "traffic": traffic if isinstance(traffic, str) else "",
+            "outages": outages if isinstance(outages, str) else "",
+            "attacks": attacks if isinstance(attacks, str) else "",
+        }
+    except Exception as e:
+        logger.error(f"Error fetching Cloudflare Radar data: {e}")
+        return {
+            "traffic": "",
+            "outages": "",
+            "attacks": ""
+        }
+
+@router.get("/radar/threats")
+async def get_radar_threats():
+    """
+    Returns AI-correlated threat intelligence (Threat Actors and Victims)
+    combining Cloudflare Radar telemetry with local OSINT news.
+    """
+    try:
+        data = await get_correlated_threat_intelligence()
+        return data
+    except Exception as e:
+        logger.error(f"Error generating correlated threat intel: {e}")
+        # Return fallback empty arrays so frontend doesn't crash
+        return {
+            "threat_actors": [],
+            "victims": []
+        }

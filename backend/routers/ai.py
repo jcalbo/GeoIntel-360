@@ -5,6 +5,7 @@ from schemas import SummarizeRequest, SummarizeResponse
 from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 from google import genai
+from services.mcp_client import get_cloudflare_intelligence_context
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +13,33 @@ router = APIRouter(tags=["AI"])
 
 @router.post("/summarize", response_model=SummarizeResponse)
 async def summarize_text(req: SummarizeRequest):
-    """Generates a 3-bullet executive summary of the provided text."""
+    """Generates a 3-bullet executive summary of the provided text, enriched with live Cloudflare Radar intelligence."""
     provider_raw = os.getenv("LLM_PROVIDER", "openai").split("#")[0]
     provider = provider_raw.strip().lower()
-    
-    prompt = f"Provide a 3-bullet point executive summary of the following intelligence snippet:\n\n{req.text}"
-    
+
+    # --- Enrich prompt with Cloudflare Radar context ---
+    cloudflare_context = ""
+    try:
+        cloudflare_context = await get_cloudflare_intelligence_context()
+    except Exception as e:
+        logger.warning(f"Could not fetch Cloudflare MCP context: {e}")
+
+    base_prompt = f"Provide a 3-bullet point executive summary of the following intelligence snippet:\n\n{req.text}"
+
+    if cloudflare_context:
+        prompt = (
+            f"{base_prompt}\n\n"
+            f"---\n"
+            f"**Additional Live Internet Intelligence Context from Cloudflare Radar:**\n"
+            f"{cloudflare_context}\n"
+            f"---\n"
+            f"If relevant, incorporate the above Cloudflare Radar data into your analysis."
+        )
+        logger.info("Cloudflare Radar context injected into LLM prompt.")
+    else:
+        prompt = base_prompt
+        logger.info("No Cloudflare Radar context available; proceeding without it.")
+
     summary = ""
     try:
         if provider == "anthropic":
@@ -51,12 +73,9 @@ async def summarize_text(req: SummarizeRequest):
                 max_tokens=250
             )
             summary = response.choices[0].message.content
-            
+
     except Exception as e:
         logger.error(f"Error connecting to LLM provider {provider}: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate AI analysis.")
 
-    # (Optional) If req.article_id is provided, you could save this analysis back to Elasticsearch
-    # to cache it for future views of the same article.
-        
     return SummarizeResponse(summary=summary)

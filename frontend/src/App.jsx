@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ShieldAlert, Globe, TrendingUp, Search } from 'lucide-react';
+import { ShieldAlert, Globe, TrendingUp, Search, Wifi } from 'lucide-react';
 import Navigation from './components/Navigation';
 import NewsFeed from './components/NewsFeed';
 import SearchBar from './components/SearchBar';
 import AnalysisModal from './components/AnalysisModal';
+import RadarDashboard from './components/RadarDashboard';
 
 const queryClient = new QueryClient();
 
@@ -12,6 +13,7 @@ export const CATEGORIES = [
   { id: 'Geopolitics', icon: Globe, color: 'text-accent-blue' },
   { id: 'Cybersecurity', icon: ShieldAlert, color: 'text-accent-purple' },
   { id: 'Economics', icon: TrendingUp, color: 'text-accent-emerald' },
+  { id: 'Internet Radar', icon: Wifi, color: 'text-[#f38020]' },
 ];
 
 function App() {
@@ -71,26 +73,28 @@ function App() {
               />
             )}
 
-            {/* Refresh News Button */}
-            <button
-              onClick={async () => {
-                try {
-                  const res = await fetch('http://localhost:8000/api/news/refresh', {
-                    method: 'POST',
-                  });
-                  if (res.ok) {
-                    alert("News refresh triggered in the background!");
+            {/* Refresh News Button — hidden on Radar tab (has its own refresh) */}
+            {activeTab !== 'Internet Radar' && (
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('http://localhost:8000/api/news/refresh', {
+                      method: 'POST',
+                    });
+                    if (res.ok) {
+                      alert("News refresh triggered in the background!");
+                    }
+                  } catch (error) {
+                    console.error("Failed to refresh news:", error);
                   }
-                } catch (error) {
-                  console.error("Failed to refresh news:", error);
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-bg-element hover:bg-bg-element-hover text-text-base rounded-lg text-sm font-medium transition-colors border border-border-element hover:border-border-subtle shadow-sm"
-              title="Fetch latest OSINT data from sources"
-            >
-              <Globe className="w-4 h-4" />
-              <span>Refresh News</span>
-            </button>
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-bg-element hover:bg-bg-element-hover text-text-base rounded-lg text-sm font-medium transition-colors border border-border-element hover:border-border-subtle shadow-sm"
+                title="Fetch latest OSINT data from sources"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Refresh News</span>
+              </button>
+            )}
           </div>
 
           {searchQuery && (
@@ -107,11 +111,15 @@ function App() {
           )}
 
           {/* Feed Content */}
-          <NewsFeed
-            category={activeTab}
-            searchQuery={searchQuery}
-            onRequestAnalysis={setAnalysisArticle}
-          />
+          {activeTab === 'Internet Radar' ? (
+            <RadarDashboard />
+          ) : (
+            <NewsFeed
+              category={activeTab}
+              searchQuery={searchQuery}
+              onRequestAnalysis={setAnalysisArticle}
+            />
+          )}
 
         </main>
       </div>

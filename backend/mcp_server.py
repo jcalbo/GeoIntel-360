@@ -6,6 +6,12 @@ from typing import Dict, Any, List
 from database import get_es_client, INDEX_NAME
 from services.fetcher import fetch_all_categories
 from services.processor import process_and_store_articles
+from services.mcp_client import (
+    get_cloudflare_intelligence_context,
+    get_internet_traffic_summary,
+    get_global_outages,
+    get_attack_summary,
+)
 
 mcp = FastMCP("GeoIntel-360")
 
@@ -49,6 +55,30 @@ async def get_recent_news_by_category(category: str, limit: int = 5) -> List[Dic
         return [hit["_source"] for hit in res["hits"]["hits"]]
     except Exception as e:
         return [{"error": str(e)}]
+
+@mcp.tool()
+async def get_cloudflare_intelligence() -> str:
+    """
+    Fetch real-time global internet intelligence from Cloudflare Radar via MCP.
+    Returns a formatted block covering internet traffic changes, active outages,
+    and DDoS/cyber-attack trends for the past 24 hours.
+    """
+    return await get_cloudflare_intelligence_context()
+
+@mcp.tool()
+async def get_internet_traffic() -> str:
+    """Get a summary of global internet traffic changes from Cloudflare Radar (last 24h)."""
+    return await get_internet_traffic_summary()
+
+@mcp.tool()
+async def get_active_outages() -> str:
+    """Get information about active internet outages worldwide as detected by Cloudflare Radar."""
+    return await get_global_outages()
+
+@mcp.tool()
+async def get_cyber_attack_trends() -> str:
+    """Get a summary of recent DDoS attacks and cyber-attack trends from Cloudflare Radar."""
+    return await get_attack_summary()
 
 if __name__ == "__main__":
     mcp.run()

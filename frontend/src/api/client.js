@@ -33,3 +33,13 @@ export const summarizeText = async (text, articleId) => {
     const { data } = await apiClient.post('/summarize', { text, article_id: articleId });
     return data;
 };
+
+export const fetchRadarData = async () => {
+    const { data } = await apiClient.get('/radar');
+    return data;
+};
+
+export const fetchRadarThreats = async () => {
+    const { data } = await apiClient.get('/radar/threats');
+    return data;
+};

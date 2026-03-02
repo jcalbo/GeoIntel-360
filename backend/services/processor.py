@@ -54,6 +54,7 @@ async def process_and_store_articles(articles: List[Dict[str, Any]]) -> int:
                 "summary": item.get("summary", ""),
                 "url": item.get("url", ""),
                 "category": item.get("category", "General"),
+                "fetch_type": item.get("fetch_type", "RSS"),
                 "ai_analysis": None,
                 "title_hash": title_hash
             }
