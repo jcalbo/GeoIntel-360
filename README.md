@@ -7,7 +7,7 @@ GeoIntel-360 is a high-performance, three-tier web application designed for moni
 The project follows a decoupled architecture, divided into three main components functioning together:
 
 - **`frontend/` (The Glass)**: The UI layer built with React, Vite, Tailwind CSS, and Framer Motion. It uses TanStack Query to manage the data fetching state and provides a modern "Intelligence Command Center" aesthetic with dark mode.
-- **`backend/` (The Gears)**: A Python FastAPI application that acts as a logic controller and data aggregator. It fetches data from various external sources, normalizes it, and implements LLM-powered summarization (using the Gemini API). It also exposes a Model Context Protocol (MCP) server for local tool integration.
+- **`backend/` (The Gears)**: A Python FastAPI application that acts as a logic controller and data aggregator. It fetches data from various external sources, normalizes it, and implements LLM-powered summarization (using Gemini or OpenAI). It provides a Model Context Protocol (MCP) server for local tool integration, and an **MCP Client** to fetch remote telemetry (like Cloudflare Radar), synthesizing it completely via an AI **Intelligence Correlator**.
 - **`docker-compose.yml` (The Memory)**: Manages a single-node Elasticsearch database container ensuring data persistence, deduplication, and full-text search capabilities across all synchronized intelligence data.
 
 ### Architecture Schema
@@ -17,20 +17,29 @@ graph TD
     User([User]) -->|Interacts| Frontend
     subgraph Client [Frontend Layer]
         Frontend[React Vite App]
-        Query[TanStack Query]
     end
     
-    Frontend --> Query
-    Query -->|HTTP APIs| Backend
+    Frontend -->|HTTP APIs| Backend
     
     subgraph Server [Backend Layer]
         Backend[FastAPI App]
-        MCPServer[MCP Server]
+        MCPServer[Local MCP Server]
+        MCPClient[Cloudflare MCP Client]
+        ThreatIntel[Intelligence Correlator]
     end
     
-    Backend -->|Search / Store| ES[(Elasticsearch)]
+    Backend -->|Store/Query OSINT| ES[(Elasticsearch)]
     Backend -->|Fetch News| ExtSources[OSINT Sources / RSS feeds]
-    Backend -->|Summarize| Gemini[Gemini LLM API]
+    Backend -->|Analyze| LLM[LLM API Gemini/OpenAI]
+    
+    Backend <-->|Expose Tools| MCPServer
+    Backend -->|Request Telemetry| MCPClient
+    MCPClient <-->|SSE Protocol| CloudflareRadar[Cloudflare Radar MCP Server]
+    
+    ThreatIntel -->|1. Telemetry| MCPClient
+    ThreatIntel -->|2. Cyber News| ES
+    ThreatIntel -->|3. Attribute| LLM
+    Backend -->|Threats Endpoint| ThreatIntel
     
     subgraph Data [Storage Layer]
         ES
@@ -38,8 +47,8 @@ graph TD
 ```
 
 ## Tech Stack Overview
-- **Frontend**: React 19, Vite, Tailwind CSS v4, Framer Motion, Axios.
-- **Backend**: Python 3.12, FastAPI, Elasticsearch Client, Google GenAI SDK.
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Framer Motion, Axios, Recharts.
+- **Backend**: Python 3.12, FastAPI, Elasticsearch Client, Google GenAI SDK, OpenAI SDK, MCP Protocol.
 - **Persistence**: Elasticsearch 8.12 running via Docker.
 
 ## Data Sources
@@ -58,6 +67,9 @@ The platform aggregates intelligence from a variety of targeted and specialized 
 - **Alpha Vantage**: Daily stock, forex data, and economic indicators.
 - **FRED API**: Hard economic indicators (inflation, debt ratios) run by the St. Louis Fed.
 - **Twelve Data**: Real-time market data.
+
+### 4. Technical Telemetry & Threat Intelligence
+- **Cloudflare Radar MCP**: Provides global internet intelligence, including DDoS attack trends, top targeted industries, and verified internet outages globally. Used by the backend *Intelligence Correlator* alongside OSINT news to attribute specific threat actor campaigns and enterprise victims visually.
 
 ## How to Run
 
