@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 ES_URL = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
 INDEX_NAME = "geointel_articles"
+RADAR_INDEX_NAME = "geointel_radar_events"
 
 # Initialize Async Elasticsearch client
 es_client = AsyncElasticsearch(ES_URL)
@@ -37,6 +38,28 @@ async def init_db():
             logger.info(f"Created index: {INDEX_NAME}")
         else:
             logger.info(f"Index {INDEX_NAME} already exists.")
+            
+        # Initialize Radar events index
+        radar_exists = await es_client.indices.exists(index=RADAR_INDEX_NAME)
+        if not radar_exists:
+            radar_mapping = {
+                "mappings": {
+                    "date_detection": False,
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "timestamp": {"type": "date"},
+                        "event_type": {"type": "keyword"}, # e.g. "outage", "threat_actor", "victim"
+                        "title": {"type": "text"},
+                        "content": {"type": "text"},
+                        "metadata": {"type": "keyword"}
+                    }
+                }
+            }
+            await es_client.indices.create(index=RADAR_INDEX_NAME, body=radar_mapping)
+            logger.info(f"Created index: {RADAR_INDEX_NAME}")
+        else:
+            logger.info(f"Index {RADAR_INDEX_NAME} already exists.")
+            
     except Exception as e:
         logger.error(f"Error initializing Elasticsearch: {e}")
 

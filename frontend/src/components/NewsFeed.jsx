@@ -5,13 +5,17 @@ import NewsCard from './NewsCard';
 import SkeletonLoader from './SkeletonLoader';
 import { AlertTriangle, Database } from 'lucide-react';
 
-export default function NewsFeed({ category, searchQuery, onRequestAnalysis }) {
+export default function NewsFeed({ category, searchQuery, onRequestAnalysis, dateRange, selectedSources }) {
     const isSearch = !!searchQuery;
 
     // The query function branches based on whether we are searching or listing a category
     const { data, isLoading, isError, error } = useQuery({
-        queryKey: isSearch ? ['search', searchQuery] : ['news', category],
-        queryFn: () => isSearch ? searchNews(searchQuery) : fetchNews({ category }),
+        queryKey: isSearch
+            ? ['search', searchQuery, dateRange, selectedSources]
+            : ['news', category, dateRange, selectedSources],
+        queryFn: () => isSearch
+            ? searchNews(searchQuery, dateRange, selectedSources)
+            : fetchNews({ category, dateRange, selectedSources }),
         staleTime: 5 * 60 * 1000, // 5 minutes fresh
     });
 

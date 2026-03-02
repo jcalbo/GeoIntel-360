@@ -6,9 +6,9 @@ GeoIntel-360 is a high-performance, three-tier web application designed for moni
 
 The project follows a decoupled architecture, divided into three main components functioning together:
 
-- **`frontend/` (The Glass)**: The UI layer built with React, Vite, Tailwind CSS, and Framer Motion. It uses TanStack Query to manage the data fetching state and provides a modern "Intelligence Command Center" aesthetic with dark mode.
+- **`frontend/` (The Glass)**: The UI layer built with React, Vite, Tailwind CSS, and Framer Motion. It uses TanStack Query to manage the data fetching state and provides a modern "Intelligence Command Center" aesthetic with dark mode. The V2 application includes a global real-time sidebar for precise date and source filtering alongside animated historical telemetry modals.
 - **`backend/` (The Gears)**: A Python FastAPI application that acts as a logic controller and data aggregator. It fetches data from various external sources, normalizes it, and implements LLM-powered summarization (using Gemini or OpenAI). It provides a Model Context Protocol (MCP) server for local tool integration, and an **MCP Client** to fetch remote telemetry (like Cloudflare Radar), synthesizing it completely via an AI **Intelligence Correlator**.
-- **`docker-compose.yml` (The Memory)**: Manages a single-node Elasticsearch database container ensuring data persistence, deduplication, and full-text search capabilities across all synchronized intelligence data.
+- **`docker-compose.yml` (The Memory)**: Manages a single-node Elasticsearch database container ensuring data persistence, deduplication, and full-text search capabilities across multiple synchronized intelligence indices (`geointel_articles` for OSINT news and `geointel_radar_events` for technical telemetry logs).
 
 ### Architecture Schema
 
@@ -28,7 +28,7 @@ graph TD
         ThreatIntel[Intelligence Correlator]
     end
     
-    Backend -->|Store/Query OSINT| ES[(Elasticsearch)]
+    Backend -->|Store/Query OSINT & Telemetry| ES[(Elasticsearch)]
     Backend -->|Fetch News| ExtSources[OSINT Sources / RSS feeds]
     Backend -->|Analyze| LLM[LLM API Gemini/OpenAI]
     
@@ -40,6 +40,7 @@ graph TD
     ThreatIntel -->|2. Cyber News| ES
     ThreatIntel -->|3. Attribute| LLM
     Backend -->|Threats Endpoint| ThreatIntel
+    Backend -->|Historical Logs| ES
     
     subgraph Data [Storage Layer]
         ES
@@ -47,9 +48,9 @@ graph TD
 ```
 
 ## Tech Stack Overview
-- **Frontend**: React 19, Vite, Tailwind CSS v4, Framer Motion, Axios, Recharts.
+- **Frontend**: React 19, Vite, Tailwind CSS v4, Framer Motion, Axios, Recharts, TanStack Query.
 - **Backend**: Python 3.12, FastAPI, Elasticsearch Client, Google GenAI SDK, OpenAI SDK, MCP Protocol.
-- **Persistence**: Elasticsearch 8.12 running via Docker.
+- **Persistence**: Elasticsearch 8.12 running via Docker with multi-index mapping (Articles & Events).
 
 ## Data Sources
 
@@ -69,7 +70,12 @@ The platform aggregates intelligence from a variety of targeted and specialized 
 - **Twelve Data**: Real-time market data.
 
 ### 4. Technical Telemetry & Threat Intelligence
+### 4. Technical Telemetry & Threat Intelligence
 - **Cloudflare Radar MCP**: Provides global internet intelligence, including DDoS attack trends, top targeted industries, and verified internet outages globally. Used by the backend *Intelligence Correlator* alongside OSINT news to attribute specific threat actor campaigns and enterprise victims visually.
+
+### 5. Features
+- **Global AppV2 Filtering**: Time-series calendar filters and modular source-selection sidebars that query the Elasticsearch indices natively.
+- **Live Historical Outage Tracking**: The backend asynchronously indexes active Cloudflare network anomalies (ASNs/Locations) and mapped threat campaigns into Elasticsearch to prevent data loss over time, surfacing it in an interactive historical UI component.
 
 ## How to Run
 

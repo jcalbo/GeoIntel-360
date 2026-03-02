@@ -1,12 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 load_dotenv()
 
 from routers import news, ai
+from database import init_db
 
-app = FastAPI(title="GeoIntel-360 API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
+app = FastAPI(title="GeoIntel-360 API", lifespan=lifespan)
 
 # Configure CORS for React frontend (Vite defaults to 5173, CRA to 3000)
 origins = [

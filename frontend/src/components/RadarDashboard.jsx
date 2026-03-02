@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRadarData, fetchRadarThreats } from '../api/client';
 import {
     Wifi, AlertCircle, RefreshCw, Activity, ShieldX, Radio,
-    TrendingDown, Globe2, Zap, Skull, Building2
+    TrendingDown, Globe2, Zap, Skull, Building2, ExternalLink, History
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from './Navigation';
+import RadarHistoryModal from './RadarHistoryModal';
 
 // ── Skeleton ────────────────────────────────────────────────────────────────
 function PanelSkeleton() {
@@ -27,7 +28,9 @@ function PanelSkeleton() {
 
 // ── Threat Panels ────────────────────────────────────────────────────────────
 
-function ThreatActorPanel({ actors, isLoading }) {
+function ThreatActorPanel({ actors, isLoading, onOpenHistory }) {
+    const [showInfo, setShowInfo] = useState(false);
+
     if (isLoading) return <PanelSkeleton />;
 
     return (
@@ -37,19 +40,38 @@ function ThreatActorPanel({ actors, isLoading }) {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-bg-surface/60 backdrop-blur-sm border border-red-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-sm"
         >
-            <div className="flex items-center gap-2.5">
+            <div
+                className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowInfo(!showInfo)}
+                title="Click for explanation"
+            >
                 <div className="p-2 rounded-xl bg-red-500/10 text-red-500">
                     <Skull className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted">Active Threat Actor Campaigns</h3>
+                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted flex-1">Active Threat Actor Campaigns</h3>
             </div>
+
+            {showInfo && (
+                <div className="text-xs text-text-muted bg-bg-element/50 p-3 rounded-lg border border-border-subtle/50 mb-1">
+                    Identifies groups actively running cyber campaigns, correlated by our LLM from Cloudflare Radar telemetry and recent OSINT news.
+                </div>
+            )}
 
             {actors && actors.length > 0 ? (
                 <div className="space-y-4 flex-1">
                     {actors.map((actor, i) => (
                         <div key={i} className="flex flex-col gap-1 border-l-2 border-red-500/30 pl-3">
                             <div className="flex items-baseline justify-between">
-                                <span className="font-bold text-red-400 text-sm">{actor.name}</span>
+                                <a
+                                    href={`https://www.google.com/search?q=${encodeURIComponent(actor.name + ' cyber threat actor')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-bold text-red-400 text-sm hover:text-red-300 hover:underline transition-colors flex items-center gap-1 group/link"
+                                    title={`Search intelligence on ${actor.name}`}
+                                >
+                                    {actor.name}
+                                    <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                </a>
                                 <span className="text-xs text-text-muted px-2 py-0.5 bg-bg-element rounded-md font-mono">{actor.type}</span>
                             </div>
                             <p className="text-xs text-text-base opacity-80 leading-relaxed">{actor.description}</p>
@@ -62,11 +84,25 @@ function ThreatActorPanel({ actors, isLoading }) {
                     <p className="text-sm text-center opacity-60">No active actor campaigns correlated.</p>
                 </div>
             )}
+
+            {onOpenHistory && (
+                <div className="pt-2 mt-auto border-t border-border-subtle/50 flex justify-end">
+                    <button
+                        onClick={() => onOpenHistory('threat_actor')}
+                        className="text-xs flex items-center gap-1.5 text-text-muted hover:text-accent-blue transition-colors font-medium"
+                    >
+                        <History className="w-3.5 h-3.5" />
+                        View History
+                    </button>
+                </div>
+            )}
         </motion.div>
     );
 }
 
-function VictimsPanel({ victims, isLoading }) {
+function VictimsPanel({ victims, isLoading, onOpenHistory }) {
+    const [showInfo, setShowInfo] = useState(false);
+
     if (isLoading) return <PanelSkeleton />;
 
     return (
@@ -76,12 +112,22 @@ function VictimsPanel({ victims, isLoading }) {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-bg-surface/60 backdrop-blur-sm border border-orange-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-sm"
         >
-            <div className="flex items-center gap-2.5">
+            <div
+                className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowInfo(!showInfo)}
+                title="Click for explanation"
+            >
                 <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
                     <Building2 className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted">Targeted Enterprises & Victims</h3>
+                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted flex-1">Targeted Enterprises & Victims</h3>
             </div>
+
+            {showInfo && (
+                <div className="text-xs text-text-muted bg-bg-element/50 p-3 rounded-lg border border-border-subtle/50 mb-1">
+                    Lists targeted organizations or industries, sourced from recent OSINT news and linked to current Cloudflare attack telemetry.
+                </div>
+            )}
 
             {victims && victims.length > 0 ? (
                 <div className="flex-1 overflow-x-auto">
@@ -114,12 +160,25 @@ function VictimsPanel({ victims, isLoading }) {
                     <p className="text-sm text-center opacity-60">No targeted enterprises correlated.</p>
                 </div>
             )}
+
+            {onOpenHistory && (
+                <div className="pt-2 mt-auto border-t border-border-subtle/50 flex justify-end">
+                    <button
+                        onClick={() => onOpenHistory('victim')}
+                        className="text-xs flex items-center gap-1.5 text-text-muted hover:text-orange-400 transition-colors font-medium"
+                    >
+                        <History className="w-3.5 h-3.5" />
+                        View History
+                    </button>
+                </div>
+            )}
         </motion.div>
     );
 }
 
 // ── Single data panel ────────────────────────────────────────────────────────
-function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, content, emptyLabel }) {
+function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, content, emptyLabel, infoText, historyType, onOpenHistory }) {
+    const [showInfo, setShowInfo] = useState(false);
     const lines = content?.split('\n').filter(Boolean) || [];
 
     return (
@@ -135,12 +194,22 @@ function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, cont
             style={{ boxShadow: content ? `0 0 30px -8px ${glowColor}` : undefined }}
         >
             {/* Header */}
-            <div className="flex items-center gap-2.5">
+            <div
+                className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowInfo(!showInfo)}
+                title="Click for explanation"
+            >
                 <div className={cn("p-2 rounded-xl bg-bg-element/60", iconColor.replace('text-', 'bg-').replace('#', '') + '/10')}>
                     <Icon className={cn("w-4 h-4", iconColor)} />
                 </div>
-                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted">{title}</h3>
+                <h3 className="font-bold text-sm tracking-wide uppercase text-text-muted flex-1">{title}</h3>
             </div>
+
+            {showInfo && (
+                <div className="text-xs text-text-muted bg-bg-element/50 p-3 rounded-lg border border-border-subtle/50 mb-1">
+                    {infoText}
+                </div>
+            )}
 
             {/* Content */}
             {lines.length > 0 ? (
@@ -149,11 +218,41 @@ function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, cont
                         const segments = line.split('**');
                         return (
                             <p key={i} className={cn("border-l-2 pl-3 py-1", borderColor)}>
-                                {segments.map((seg, j) => (
-                                    j % 2 === 1
-                                        ? <strong key={j} className="text-text-base brightness-125">{seg}</strong>
-                                        : <span key={j} className="text-text-muted">{seg}</span>
-                                ))}
+                                {segments.map((seg, j) => {
+                                    if (j % 2 === 1) {
+                                        return <strong key={j} className="text-text-base brightness-125">{seg}</strong>;
+                                    }
+
+                                    // Parse basic markdown links [text](url)
+                                    const parts = seg.split(/\[([^\]]+)\]\(([^)]+)\)/g);
+                                    if (parts.length > 1) {
+                                        return (
+                                            <span key={j} className="text-text-muted">
+                                                {parts.map((p, k) => {
+                                                    if (k % 3 === 0) return p;
+                                                    if (k % 3 === 1) {
+                                                        const url = parts[k + 1];
+                                                        return (
+                                                            <a
+                                                                key={k}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-accent-blue hover:text-blue-400 hover:underline transition-colors ml-1"
+                                                                title={`View Autonomous System Information on BGP Hurricane Electric`}
+                                                            >
+                                                                {p}
+                                                            </a>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })}
+                                            </span>
+                                        );
+                                    }
+
+                                    return <span key={j} className="text-text-muted">{seg}</span>;
+                                })}
                             </p>
                         );
                     })}
@@ -164,6 +263,18 @@ function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, cont
                     <p className="text-sm text-center opacity-60">{emptyLabel}</p>
                 </div>
             )}
+
+            {onOpenHistory && historyType && (
+                <div className="pt-2 mt-auto border-t border-border-subtle/50 flex justify-end">
+                    <button
+                        onClick={() => onOpenHistory(historyType)}
+                        className="text-xs flex items-center gap-1.5 text-text-muted hover:text-text-base transition-colors font-medium"
+                    >
+                        <History className="w-3.5 h-3.5" />
+                        View History
+                    </button>
+                </div>
+            )}
         </motion.div>
     );
 }
@@ -171,6 +282,7 @@ function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, cont
 // ── Main dashboard ────────────────────────────────────────────────────────────
 export default function RadarDashboard() {
     const queryClient = useQueryClient();
+    const [historyType, setHistoryType] = useState(null);
 
     const { data: radarData, isLoading: radarLoading, isError: radarError, error: radarErrorMsg, isFetching: radarFetching, dataUpdatedAt: radarUpdated } = useQuery({
         queryKey: ['radar', 'telemetry'],
@@ -216,6 +328,7 @@ export default function RadarDashboard() {
             glowColor: 'rgba(243,128,32,0.25)',
             content: radarData?.traffic,
             emptyLabel: 'No global traffic anomalies detected.',
+            infoText: "Real-time shifts in global Internet traffic volume, identifying significant drops or surges compared to historical baselines."
         },
         {
             key: 'outages',
@@ -226,6 +339,9 @@ export default function RadarDashboard() {
             glowColor: 'rgba(239,68,68,0.2)',
             content: radarData?.outages,
             emptyLabel: 'No active internet outages reported.',
+            infoText: "Verified Internet disruptions at the country or ASN level, often associated with infrastructure failures, censorship, or cyber attacks.",
+            historyType: 'outage',
+            onOpenHistory: setHistoryType
         },
         {
             key: 'attacks',
@@ -236,6 +352,7 @@ export default function RadarDashboard() {
             glowColor: 'rgba(234,179,8,0.15)',
             content: radarData?.attacks,
             emptyLabel: 'No significant attack trends in the last 24h.',
+            infoText: "Spikes in Layer 7 DDoS activity and application-level attacks detected across Cloudflare's global network."
         },
     ];
 
@@ -294,10 +411,10 @@ export default function RadarDashboard() {
             {/* Bottom 2-column panels (Threat Intel) */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
                 <div className="md:col-span-2">
-                    <ThreatActorPanel actors={threatData?.threat_actors} isLoading={threatLoading} />
+                    <ThreatActorPanel actors={threatData?.threat_actors} isLoading={threatLoading} onOpenHistory={setHistoryType} />
                 </div>
                 <div className="md:col-span-3">
-                    <VictimsPanel victims={threatData?.victims} isLoading={threatLoading} />
+                    <VictimsPanel victims={threatData?.victims} isLoading={threatLoading} onOpenHistory={setHistoryType} />
                 </div>
             </div>
 
@@ -306,6 +423,12 @@ export default function RadarDashboard() {
                 <Radio className="w-3 h-3" />
                 <span>Data sourced from Cloudflare Radar MCP · Last 24 hours</span>
             </div>
+
+            <RadarHistoryModal
+                isOpen={!!historyType}
+                eventType={historyType}
+                onClose={() => setHistoryType(null)}
+            />
         </div>
     );
 }

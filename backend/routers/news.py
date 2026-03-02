@@ -1,7 +1,9 @@
 import logging
-from fastapi import APIRouter, BackgroundTasks, Query
+from fastapi import APIRouter, BackgroundTasks, Query, HTTPException
 from typing import List, Optional
-from database import get_es_client, INDEX_NAME
+from datetime import datetime, timezone
+import hashlib
+from database import get_es_client, INDEX_NAME, RADAR_INDEX_NAME
 from services.fetcher import fetch_all_categories
 from services.processor import process_and_store_articles
 from services.mcp_client import (
@@ -31,15 +33,34 @@ async def refresh_news(background_tasks: BackgroundTasks):
 @router.get("/news")
 async def get_news(
     category: Optional[str] = None, 
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    sources: Optional[List[str]] = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = 0
 ):
-    """Fetch recent news, optionally filtered by category."""
+    """Fetch recent news, optionally filtered by category, dates, and sources."""
     es = await get_es_client()
     
-    query = {"match_all": {}}
+    # Base query structure for multiple filters
+    bool_query = {"must": []}
+    
     if category:
-        query = {"term": {"category": category}}
+        bool_query["must"].append({"term": {"category": category}})
+        
+    if sources:
+        bool_query["must"].append({"terms": {"source": sources}})
+        
+    if start_date or end_date:
+        date_range = {}
+        if start_date:
+            date_range["gte"] = start_date
+        if end_date:
+            date_range["lte"] = end_date
+        bool_query["must"].append({"range": {"date": date_range}})
+        
+    # If no filters exist, use match_all
+    query = {"bool": bool_query} if bool_query["must"] else {"match_all": {}}
         
     try:
         res = await es.search(
@@ -57,16 +78,39 @@ async def get_news(
         return {"total": 0, "articles": []}
 
 @router.get("/search")
-async def search_news(q: str = Query(..., min_length=2), limit: int = 20):
-    """Full-text search across all stored articles."""
+async def search_news(
+    q: str = Query(..., min_length=2),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    sources: Optional[List[str]] = Query(None),
+    limit: int = 20
+):
+    """Full-text search across all stored articles, respecting global filters."""
     es = await get_es_client()
     
-    query = {
-        "multi_match": {
-            "query": q,
-            "fields": ["title^2", "summary"]
-        }
+    bool_query = {
+        "must": [
+            {
+                "multi_match": {
+                    "query": q,
+                    "fields": ["title^2", "summary"]
+                }
+            }
+        ]
     }
+    
+    if sources:
+        bool_query["must"].append({"terms": {"source": sources}})
+        
+    if start_date or end_date:
+        date_range = {}
+        if start_date:
+            date_range["gte"] = start_date
+        if end_date:
+            date_range["lte"] = end_date
+        bool_query["must"].append({"range": {"date": date_range}})
+    
+    query = {"bool": bool_query}
     
     try:
         res = await es.search(
@@ -109,6 +153,50 @@ async def get_radar_intelligence():
             "attacks": ""
         }
 
+@router.post("/radar/persist")
+async def persist_radar_outages(background_tasks: BackgroundTasks):
+    """
+    Background hook to persist the current active outages string into ES.
+    The frontend or a scheduler can trigger this.
+    """
+    async def _persist():
+        try:
+            outages = await get_global_outages()
+            if not isinstance(outages, str) or not outages or "No active internet outages" in outages:
+                return
+            
+            es = await get_es_client()
+            now = datetime.now(timezone.utc)
+            date_str = now.strftime("%Y-%m-%d") # Use today's date for bucketing
+            
+            # Split lines, each line is an anomaly
+            for line in outages.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Create a deterministic ID: hash of date + the exact content string
+                content_hash = hashlib.md5((date_str + line).encode()).hexdigest()
+                doc_id = f"outage_{content_hash}"
+                
+                doc = {
+                    "id": doc_id,
+                    "timestamp": now.isoformat(),
+                    "event_type": "outage",
+                    "title": line.split(':')[0].replace('**', '').strip() if ':' in line else "Active Outage",
+                    "content": line,
+                    "metadata": date_str
+                }
+                
+                # Use index to overwrite if exists (upsert)
+                await es.index(index=RADAR_INDEX_NAME, id=doc_id, document=doc)
+                
+        except Exception as e:
+            logger.error(f"Error persisting radar outages: {e}")
+            
+    background_tasks.add_task(_persist)
+    return {"status": "persisting"}
+
 @router.get("/radar/threats")
 async def get_radar_threats():
     """
@@ -125,3 +213,84 @@ async def get_radar_threats():
             "threat_actors": [],
             "victims": []
         }
+
+@router.post("/radar/threats/persist")
+async def persist_radar_threats(background_tasks: BackgroundTasks):
+    """
+    Background hook to persist the current threat actors and victims into ES.
+    """
+    async def _persist():
+        try:
+            data = await get_correlated_threat_intelligence()
+            actors = data.get("threat_actors", [])
+            victims = data.get("victims", [])
+            
+            if not actors and not victims:
+                return
+                
+            es = await get_es_client()
+            now = datetime.now(timezone.utc)
+            date_str = now.strftime("%Y-%m-%d")
+            
+            for actor in actors:
+                content_hash = hashlib.md5((date_str + actor['name']).encode()).hexdigest()
+                doc_id = f"threat_actor_{content_hash}"
+                doc = {
+                    "id": doc_id,
+                    "timestamp": now.isoformat(),
+                    "event_type": "threat_actor",
+                    "title": actor['name'],
+                    "content": actor.get('description', ''),
+                    "metadata": actor.get('type', '')
+                }
+                await es.index(index=RADAR_INDEX_NAME, id=doc_id, document=doc)
+                
+            for victim in victims:
+                content_hash = hashlib.md5((date_str + victim['name'] + victim.get('status', '')).encode()).hexdigest()
+                doc_id = f"victim_{content_hash}"
+                doc = {
+                    "id": doc_id,
+                    "timestamp": now.isoformat(),
+                    "event_type": "victim",
+                    "title": victim['name'],
+                    "content": victim.get('status', ''),
+                    "metadata": victim.get('industry', '')
+                }
+                await es.index(index=RADAR_INDEX_NAME, id=doc_id, document=doc)
+                
+        except Exception as e:
+            logger.error(f"Error persisting radar threats: {e}")
+            
+    background_tasks.add_task(_persist)
+    return {"status": "persisting"}
+
+@router.get("/radar/history")
+async def get_radar_history(
+    event_type: str = Query(..., description="Type of event: outage, threat_actor, victim"),
+    limit: int = 50,
+    offset: int = 0
+):
+    """Fetch historical radar events from Elasticsearch."""
+    es = await get_es_client()
+    query = {
+        "bool": {
+            "must": [
+                {"term": {"event_type": event_type}}
+            ]
+        }
+    }
+    
+    try:
+        res = await es.search(
+            index=RADAR_INDEX_NAME,
+            query=query,
+            sort=[{"timestamp": {"order": "desc"}}],
+            size=limit,
+            from_=offset
+        )
+        
+        events = [hit["_source"] for hit in res["hits"]["hits"]]
+        return {"total": res["hits"]["total"]["value"], "events": events}
+    except Exception as e:
+        logger.error(f"Error fetching radar history from ES: {e}")
+        return {"total": 0, "events": []}

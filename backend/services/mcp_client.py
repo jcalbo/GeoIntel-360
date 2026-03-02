@@ -180,8 +180,16 @@ def _format_traffic_anomalies(json_str: str) -> str:
             type_ = a.get("type", "Anomaly")
             status = a.get("status", "Active")
             name = asn_details.get("name", "")
+            asn = asn_details.get("asn", "")
             
-            lines.append(f"**{loc}** ({type_}): {status}{f' - {name}' if name else ''}")
+            if name and asn:
+                suffix = f" - {name} ([AS{asn}](https://bgp.he.net/AS{asn}))"
+            elif name:
+                suffix = f" - {name}"
+            else:
+                suffix = ""
+            
+            lines.append(f"**{loc}** ({type_}): {status}{suffix}")
 
         return "\n".join(lines)
     except Exception as e:
