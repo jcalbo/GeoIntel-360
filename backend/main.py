@@ -16,16 +16,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="GeoIntel-360 API", lifespan=lifespan)
 
 # Configure CORS for React frontend (Vite defaults to 5173, CRA to 3000)
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# Allowing all origins and disabling credentials for local development via IP
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
