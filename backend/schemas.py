@@ -10,6 +10,7 @@ class Article(BaseModel):
     summary: str
     url: str
     category: str
+    fetch_type: Optional[str] = None
     ai_analysis: Optional[str] = None
     title_hash: str
 

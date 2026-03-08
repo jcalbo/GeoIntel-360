@@ -25,7 +25,7 @@ function AppV2() {
 
   // Global Filter State
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [selectedSources, setSelectedSources] = useState(SOURCES.map(s => s.id));
+  const [selectedSources, setSelectedSources] = useState([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

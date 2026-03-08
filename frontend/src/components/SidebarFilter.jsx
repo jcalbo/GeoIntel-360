@@ -37,7 +37,7 @@ function SidebarFilter({
 
     const clearFilters = () => {
         setDateRange({ start: '', end: '' });
-        setSelectedSources(SOURCES.map(s => s.id)); // Default to all selected
+        setSelectedSources([]); // Default to none selected (show all)
     };
 
     return (

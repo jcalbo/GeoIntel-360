@@ -30,8 +30,8 @@ async def summarize_text(req: SummarizeRequest):
         context_text = "\n".join(context_items)
 
     base_prompt = (
-        f"Provide a comprehensive summary with exactly 3 bullet points of the following Main Event intelligence snippet.\n"
-        f"Expand your explanation on each bullet point to ensure the total response covers AT LEAST 100 words.\n"
+        f"Provide a comprehensive summary in Spanish with exactly 3 bullet points of the following Main Event intelligence snippet.\n"
+        f"Expand your explanation on each bullet point to ensure the total response covers AT LEAST 60 words.\n"
         f"Following the bullets, provide a brief 1-sentence paragraph of strategic implications.\n"
         f"CRITICAL: Your analysis MUST be detailed and comprehensive. Ensure you finish your sentences and thoughts completely. Do NOT cut off mid-sentence.\n\n"
         f"**Main Event:**\n{req.text}\n"

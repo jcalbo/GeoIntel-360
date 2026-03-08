@@ -85,7 +85,7 @@ async def fetch_newsapi() -> List[Dict[str, Any]]:
     
     articles = []
     for item in data.get("articles", []):
-        if item.get("title") and item.get("url") and item.title != "[Removed]":
+        if item.get("title") and item.get("url") and item.get("title") != "[Removed]":
             articles.append({
                 "title": item["title"],
                 "url": item["url"],
