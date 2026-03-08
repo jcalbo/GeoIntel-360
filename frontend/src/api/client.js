@@ -51,8 +51,12 @@ export const searchNews = async (query, dateRange, selectedSources) => {
     return data;
 };
 
-export const summarizeText = async (text, articleId) => {
-    const { data } = await apiClient.post('/summarize', { text, article_id: articleId });
+export const summarizeText = async (text, articleId, contextArticles) => {
+    const { data } = await apiClient.post('/summarize', {
+        text,
+        article_id: articleId,
+        context_articles: contextArticles
+    });
     return data;
 };
 

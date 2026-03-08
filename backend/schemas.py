@@ -16,6 +16,7 @@ class Article(BaseModel):
 class SummarizeRequest(BaseModel):
     text: str
     article_id: Optional[str] = None
+    context_articles: Optional[list[dict]] = None
 
 class SummarizeResponse(BaseModel):
     summary: str

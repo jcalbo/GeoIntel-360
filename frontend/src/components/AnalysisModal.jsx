@@ -4,12 +4,19 @@ import { X, BrainCircuit, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { summarizeText } from '../api/client';
 
-export default function AnalysisModal({ article, onClose }) {
+export default function AnalysisModal({ article, contextArticles, onClose }) {
     if (!article) return null;
 
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['summary', article.id],
-        queryFn: () => summarizeText(article.summary || article.title, article.id),
+        queryKey: ['summary_200_words', article.id],
+        queryFn: () => {
+            const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+            const context = (contextArticles || [])
+                .filter(a => a.id !== article.id)
+                .filter(a => new Date(a.date) >= fortyEightHoursAgo)
+                .slice(0, 10);
+            return summarizeText(article.summary || article.title, article.id, context);
+        },
         staleTime: 1000 * 60 * 60, // 1 hour cache
         enabled: !!article,
     });
@@ -33,7 +40,7 @@ export default function AnalysisModal({ article, onClose }) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
                     transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                    className="relative w-full max-w-2xl bg-bg-base border border-border-subtle rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[85vh] transition-colors duration-300"
+                    className="relative w-full max-w-4xl bg-bg-base border border-border-subtle rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[85vh] transition-colors duration-300"
                 >
                     {/* Header */}
                     <div className="flex items-start justify-between p-5 md:p-6 border-b border-border-subtle bg-bg-surface/30">

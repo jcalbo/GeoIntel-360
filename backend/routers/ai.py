@@ -24,7 +24,24 @@ async def summarize_text(req: SummarizeRequest):
     except Exception as e:
         logger.warning(f"Could not fetch Cloudflare MCP context: {e}")
 
-    base_prompt = f"Provide a 3-bullet point executive summary of the following intelligence snippet:\n\n{req.text}"
+    context_text = ""
+    if req.context_articles:
+        context_items = [f"- [{c.get('title', 'Unknown News')}]({c.get('url', '#')})" for c in req.context_articles]
+        context_text = "\n".join(context_items)
+
+    base_prompt = (
+        f"Provide a comprehensive summary with exactly 3 bullet points of the following Main Event intelligence snippet.\n"
+        f"Expand your explanation on each bullet point to ensure the total response covers AT LEAST 100 words.\n"
+        f"Following the bullets, provide a brief 1-sentence paragraph of strategic implications.\n"
+        f"CRITICAL: Your analysis MUST be detailed and comprehensive. Ensure you finish your sentences and thoughts completely. Do NOT cut off mid-sentence.\n\n"
+        f"**Main Event:**\n{req.text}\n"
+    )
+
+    if context_text:
+        base_prompt += (
+            f"\n\n---\n**Recent Related News:**\n{context_text}\n---\n\n"
+            f"Additionally, at the end of your response, provide a 'Related News' section that briefly lists the provided Related News using their exact titles and markdown links."
+        )
 
     if cloudflare_context:
         prompt = (
@@ -46,7 +63,7 @@ async def summarize_text(req: SummarizeRequest):
             client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
             response = await client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=250,
+                max_tokens=2048,
                 messages=[{"role": "user", "content": prompt}]
             )
             summary = response.content[0].text
@@ -56,8 +73,8 @@ async def summarize_text(req: SummarizeRequest):
                 model='gemini-2.5-flash',
                 contents=prompt,
                 config=genai.types.GenerateContentConfig(
-                    max_output_tokens=500,
-                    system_instruction="You are a senior intelligence analyst. Format your response strictly as 3 bullet points."
+                    max_output_tokens=2048,
+                    system_instruction="You are a senior intelligence analyst. Provide comprehensive responses (at least 100 words). Expand your explanation on each bullet point. Format with exactly 3 bullet points, a 1-sentence implication, and related news links if provided. DO NOT STOP mid-sentence."
                 )
             )
             summary = response.text
@@ -67,10 +84,10 @@ async def summarize_text(req: SummarizeRequest):
             response = await client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a senior intelligence analyst."},
+                    {"role": "system", "content": "You are a senior intelligence analyst. Provide comprehensive summaries (at least 100 words). Expand explanations to meet this length. Do not leave sentences unfinished."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=250
+                max_tokens=2048
             )
             summary = response.choices[0].message.content
 

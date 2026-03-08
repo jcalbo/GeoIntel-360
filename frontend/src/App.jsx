@@ -20,6 +20,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(CATEGORIES[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [analysisArticle, setAnalysisArticle] = useState(null);
+  const [analysisContext, setAnalysisContext] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
   useEffect(() => {
@@ -117,7 +118,10 @@ function App() {
             <NewsFeed
               category={activeTab}
               searchQuery={searchQuery}
-              onRequestAnalysis={setAnalysisArticle}
+              onRequestAnalysis={(article, context) => {
+                setAnalysisArticle(article);
+                setAnalysisContext(context);
+              }}
             />
           )}
 
@@ -127,7 +131,11 @@ function App() {
       {/* Analysis Modal Portal */}
       <AnalysisModal
         article={analysisArticle}
-        onClose={() => setAnalysisArticle(null)}
+        contextArticles={analysisContext}
+        onClose={() => {
+          setAnalysisArticle(null);
+          setAnalysisContext([]);
+        }}
       />
     </QueryClientProvider>
   );

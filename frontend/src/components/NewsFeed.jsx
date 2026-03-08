@@ -66,7 +66,7 @@ export default function NewsFeed({ category, searchQuery, onRequestAnalysis, dat
                 <NewsCard
                     key={article.id}
                     article={article}
-                    onRequestAnalysis={() => onRequestAnalysis(article)}
+                    onRequestAnalysis={() => onRequestAnalysis(article, articles)}
                 />
             ))}
         </div>
