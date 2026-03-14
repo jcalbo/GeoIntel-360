@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ShieldAlert, Globe, TrendingUp, Search, Wifi } from 'lucide-react';
+import { ShieldAlert, Globe, Search } from 'lucide-react';
 import Navigation from './components/Navigation';
 import NewsFeed from './components/NewsFeed';
 import SearchBar from './components/SearchBar';
 import AnalysisModal from './components/AnalysisModal';
 import RadarDashboard from './components/RadarDashboard';
-import SidebarFilter, { SOURCES } from './components/SidebarFilter';
+import SidebarFilter from './components/SidebarFilter';
+import CampaignOriginsPage from './components/CampaignOriginsPage';
+import { CATEGORIES } from './constants';
 
 const queryClient = new QueryClient();
-
-export const CATEGORIES = [
-  { id: 'Geopolitics', icon: Globe, color: 'text-accent-blue' },
-  { id: 'Cybersecurity', icon: ShieldAlert, color: 'text-accent-purple' },
-  { id: 'Economics', icon: TrendingUp, color: 'text-accent-emerald' },
-  { id: 'Internet Radar', icon: Wifi, color: 'text-[#f38020]' },
-];
 
 function AppV2() {
   const [activeTab, setActiveTab] = useState(CATEGORIES[0].id);
@@ -91,8 +86,8 @@ function AppV2() {
                 />
               )}
 
-              {/* Refresh News Button — hidden on Radar tab (has its own refresh) */}
-              {activeTab !== 'Internet Radar' && (
+              {/* Refresh News Button — hidden on Radar and Map tabs (they have their own refresh) */}
+              {activeTab !== 'Internet Radar' && activeTab !== 'Campaign Origins' && (
                 <button
                   onClick={async () => {
                     try {
@@ -131,6 +126,8 @@ function AppV2() {
             {/* Feed Content */}
             {activeTab === 'Internet Radar' ? (
               <RadarDashboard />
+            ) : activeTab === 'Campaign Origins' ? (
+              <CampaignOriginsPage />
             ) : (
               <NewsFeed
                 category={activeTab}

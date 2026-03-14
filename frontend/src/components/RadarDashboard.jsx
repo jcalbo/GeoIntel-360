@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRadarData, fetchRadarThreats } from '../api/client';
 import {
     Wifi, AlertCircle, RefreshCw, Activity, ShieldX, Radio,
-    TrendingDown, Globe2, Zap, Skull, Building2, ExternalLink, History
+    TrendingDown, Globe2, Zap, Skull, Building2, ExternalLink, History, ShieldAlert
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from './Navigation';
 import RadarHistoryModal from './RadarHistoryModal';
+import McpDossierModal from './McpDossierModal';
 
 // ── Skeleton ────────────────────────────────────────────────────────────────
 function PanelSkeleton() {
@@ -28,7 +29,7 @@ function PanelSkeleton() {
 
 // ── Threat Panels ────────────────────────────────────────────────────────────
 
-function ThreatActorPanel({ actors, isLoading, onOpenHistory }) {
+function ThreatActorPanel({ actors, isLoading, onOpenHistory, onActorClick }) {
     const [showInfo, setShowInfo] = useState(false);
 
     if (isLoading) return <PanelSkeleton />;
@@ -62,16 +63,14 @@ function ThreatActorPanel({ actors, isLoading, onOpenHistory }) {
                     {actors.map((actor, i) => (
                         <div key={i} className="flex flex-col gap-1 border-l-2 border-red-500/30 pl-3">
                             <div className="flex items-baseline justify-between">
-                                <a
-                                    href={`https://www.google.com/search?q=${encodeURIComponent(actor.name + ' cyber threat actor')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="font-bold text-red-400 text-sm hover:text-red-300 hover:underline transition-colors flex items-center gap-1 group/link"
-                                    title={`Search intelligence on ${actor.name}`}
+                                <button
+                                    onClick={() => onActorClick && onActorClick(actor.name)}
+                                    className="font-bold text-red-400 text-sm hover:text-red-300 hover:underline transition-colors flex items-center gap-1 group/link text-left"
+                                    title={`View detailed MCP dossier for ${actor.name}`}
                                 >
                                     {actor.name}
                                     <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
-                                </a>
+                                </button>
                                 <span className="text-xs text-text-muted px-2 py-0.5 bg-bg-element rounded-md font-mono">{actor.type}</span>
                             </div>
                             <p className="text-xs text-text-base opacity-80 leading-relaxed">{actor.description}</p>
@@ -283,11 +282,12 @@ function RadarPanel({ title, icon: Icon, iconColor, borderColor, glowColor, cont
 export default function RadarDashboard() {
     const queryClient = useQueryClient();
     const [historyType, setHistoryType] = useState(null);
+    const [dossierActor, setDossierActor] = useState(null);
 
     const { data: radarData, isLoading: radarLoading, isError: radarError, error: radarErrorMsg, isFetching: radarFetching, dataUpdatedAt: radarUpdated } = useQuery({
         queryKey: ['radar', 'telemetry'],
         queryFn: fetchRadarData,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 0,
         refetchInterval: 5 * 60 * 1000,
     });
 
@@ -320,15 +320,15 @@ export default function RadarDashboard() {
 
     const panels = [
         {
-            key: 'traffic',
-            title: 'Global Traffic',
-            icon: Activity,
-            iconColor: 'text-[#f38020]',
-            borderColor: 'border-[#f38020]/30',
-            glowColor: 'rgba(243,128,32,0.25)',
-            content: radarData?.traffic,
-            emptyLabel: 'No global traffic anomalies detected.',
-            infoText: "Real-time shifts in global Internet traffic volume, identifying significant drops or surges compared to historical baselines."
+            key: 'l3_attacks',
+            title: 'L3 DDoS Attacks',
+            icon: ShieldAlert,
+            iconColor: 'text-indigo-400',
+            borderColor: 'border-indigo-500/30',
+            glowColor: 'rgba(99,102,241,0.15)',
+            content: radarData?.l3_attacks,
+            emptyLabel: 'No L3 DDoS volumetric anomalies.',
+            infoText: "Peak bitrates of L3 internal volumetric DDoS attacks aimed at critical infrastructure."
         },
         {
             key: 'outages',
@@ -400,22 +400,18 @@ export default function RadarDashboard() {
                 </div>
             </div>
 
-            {/* Top 3-column panels (Telemetry) */}
+            {/* Top Row: Threat Intel */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <ThreatActorPanel actors={threatData?.threat_actors} isLoading={threatLoading} onOpenHistory={setHistoryType} onActorClick={setDossierActor} />
+                <VictimsPanel victims={threatData?.victims} isLoading={threatLoading} onOpenHistory={setHistoryType} />
+            </div>
+
+            {/* Bottom Row: Cloudflare Telemetry Panels */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {radarLoading
                     ? [1, 2, 3].map(k => <PanelSkeleton key={k} />)
                     : panels.map(p => <RadarPanel key={p.key} {...p} />)
                 }
-            </div>
-
-            {/* Bottom 2-column panels (Threat Intel) */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
-                <div className="md:col-span-2">
-                    <ThreatActorPanel actors={threatData?.threat_actors} isLoading={threatLoading} onOpenHistory={setHistoryType} />
-                </div>
-                <div className="md:col-span-3">
-                    <VictimsPanel victims={threatData?.victims} isLoading={threatLoading} onOpenHistory={setHistoryType} />
-                </div>
             </div>
 
             {/* Footer attribution */}
@@ -428,6 +424,12 @@ export default function RadarDashboard() {
                 isOpen={!!historyType}
                 eventType={historyType}
                 onClose={() => setHistoryType(null)}
+            />
+
+            <McpDossierModal 
+                isOpen={!!dossierActor}
+                actorName={dossierActor}
+                onClose={() => setDossierActor(null)}
             />
         </div>
     );

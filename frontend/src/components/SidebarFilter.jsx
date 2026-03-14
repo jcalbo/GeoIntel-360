@@ -1,25 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Filter, ArchiveX } from 'lucide-react';
-
-const SOURCES = [
-    // Military & Defense
-    { id: "https://warontherocks.com/feed/", label: "War on the Rocks" },
-    { id: "https://www.longwarjournal.org/feed", label: "The Long War Journal" },
-    { id: "https://news.usni.org/feed", label: "USNI News" },
-
-    // Cybersecurity
-    { id: "https://feeds.feedburner.com/TheHackersNews", label: "The Hacker News" },
-    { id: "https://www.bleepingcomputer.com/feed/", label: "BleepingComputer" },
-    { id: "https://www.cisa.gov/cybersecurity-advisories/all.xml", label: "CISA Cyber Alerts" },
-
-    // Economics
-    { id: "https://www.cfr.org/rss/all", label: "Council on Foreign Relations" },
-    { id: "https://www.bruegel.org/rss.xml", label: "Bruegel" },
-
-    // API Aggregators (These often retain their original reporting source e.g. "Al Jazeera", but we'll include common ones)
-    { id: "NewsData.io", label: "NewsData.io Network" },
-    { id: "GNews", label: "GNews Network" }
-];
+import { subDays, subWeeks, subMonths, format } from 'date-fns';
+import { SOURCES } from '../constants';
 
 function SidebarFilter({
     dateRange,
@@ -27,16 +9,58 @@ function SidebarFilter({
     selectedSources,
     setSelectedSources
 }) {
-    const handleSourceToggle = (source) => {
-        setSelectedSources(prev =>
-            prev.includes(source)
-                ? prev.filter(s => s !== source)
-                : [...prev, source]
-        );
+    const [timePeriod, setTimePeriod] = useState('always');
+
+    // Sync dropdown with cleared external state
+    useEffect(() => {
+        if (!dateRange.start && !dateRange.end) {
+            setTimePeriod('always');
+        }
+    }, [dateRange]);
+
+    const handleSourceToggle = (sourceId) => {
+        if (selectedSources.length === 0) {
+            // Starting from "All" state, isolate to the clicked source
+            setSelectedSources([sourceId]);
+        } else {
+            // Normal toggle behavior
+            setSelectedSources(prev =>
+                prev.includes(sourceId)
+                    ? prev.filter(s => s !== sourceId)
+                    : [...prev, sourceId]
+            );
+        }
+    };
+
+    const handleTimePeriodChange = (e) => {
+        const period = e.target.value;
+        setTimePeriod(period);
+
+        const today = new Date();
+        const end = format(today, 'yyyy-MM-dd');
+        let start = '';
+
+        if (period === 'last24h') {
+            start = format(subDays(today, 1), 'yyyy-MM-dd');
+        } else if (period === 'last3days') {
+            start = format(subDays(today, 3), 'yyyy-MM-dd');
+        } else if (period === '1week') {
+            start = format(subWeeks(today, 1), 'yyyy-MM-dd');
+        } else if (period === '1month') {
+            start = format(subMonths(today, 1), 'yyyy-MM-dd');
+        } else if (period === 'always') {
+            start = '';
+            // For "always", we clear the dates so it fetches everything
+            setDateRange({ start: '', end: '' });
+            return;
+        }
+
+        setDateRange({ start, end });
     };
 
     const clearFilters = () => {
         setDateRange({ start: '', end: '' });
+        setTimePeriod('always');
         setSelectedSources([]); // Default to none selected (show all)
     };
 
@@ -58,31 +82,24 @@ function SidebarFilter({
                 </button>
             </div>
 
-            {/* Date Range Picker */}
+            {/* Date Range Picker -> Time Period Dropdown */}
             <section className="flex flex-col gap-4">
                 <h3 className="text-sm font-medium text-text-muted uppercase tracking-wider flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Time Period
                 </h3>
                 <div className="flex flex-col gap-3">
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-text-muted">From Date</label>
-                        <input
-                            type="date"
-                            value={dateRange.start}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                            className="w-full bg-bg-element text-text-base border border-border-element rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue"
-                        />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-text-muted">To Date</label>
-                        <input
-                            type="date"
-                            value={dateRange.end}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                            className="w-full bg-bg-element text-text-base border border-border-element rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue"
-                        />
-                    </div>
+                    <select
+                        value={timePeriod}
+                        onChange={handleTimePeriodChange}
+                        className="w-full bg-bg-element text-text-base border border-border-element rounded-md px-3 py-2 text-sm focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue appearance-none cursor-pointer"
+                    >
+                        <option value="always">Always</option>
+                        <option value="last24h">Last 24h</option>
+                        <option value="last3days">Last 3 days</option>
+                        <option value="1week">1 week ago</option>
+                        <option value="1month">1 month ago</option>
+                    </select>
                 </div>
             </section>
 
@@ -93,7 +110,7 @@ function SidebarFilter({
                 </h3>
                 <div className="flex flex-col gap-2.5">
                     {SOURCES.map(source => {
-                        const isSelected = selectedSources.includes(source.id);
+                        const isSelected = selectedSources.length === 0 || selectedSources.includes(source.id);
                         return (
                             <label
                                 key={source.id}
@@ -106,8 +123,8 @@ function SidebarFilter({
                                     onChange={() => handleSourceToggle(source.id)}
                                 />
                                 <div className={`
-                  w-5 h-5 rounded border flex items-center justify-center transition-colors
-                  ${isSelected ? 'bg-accent-blue border-accent-blue' : 'bg-bg-element border-border-element group-hover:border-text-muted'}
+                  w-5 h-5 rounded border flex items-center justify-center transition-colors pointer-events-none
+                  ${isSelected ? 'bg-accent-blue border-accent-blue' : 'bg-bg-surface border-border-strong group-hover:border-accent-blue'}
                 `}>
                                     {isSelected && (
                                         <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,7 +132,7 @@ function SidebarFilter({
                                         </svg>
                                     )}
                                 </div>
-                                <span className={`text-sm select-none transition-colors ${isSelected ? 'text-text-base' : 'text-text-muted'}`}>
+                                <span className={`text-sm select-none transition-colors pointer-events-none ${isSelected ? 'text-text-base' : 'text-text-muted group-hover:text-text-base'}`}>
                                     {source.label}
                                 </span>
                             </label>
@@ -128,5 +145,4 @@ function SidebarFilter({
     );
 }
 
-export { SOURCES };
 export default SidebarFilter;

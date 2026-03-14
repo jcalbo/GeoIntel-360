@@ -225,6 +225,50 @@ def _format_attack_summary(json_str: str) -> str:
         return json_str
 
 
+def _format_l3_attack_summary(json_str: str) -> str:
+    """Format L3 attack bitrate distribution summary into a readable list.
+    
+    Cloudflare returns PERCENTAGE distribution across bitrate buckets,
+    not raw bitrate values. Each key is a bucket like UNDER_500_MBPS.
+    """
+    # Human-readable labels for Cloudflare's bitrate bucket keys
+    BUCKET_LABELS = {
+        "UNDER_500_MBPS":         "< 500 Mbps",
+        "_500_MBPS_TO_1_GBPS":    "500 Mbps – 1 Gbps",
+        "_1_GBPS_TO_10_GBPS":     "1 Gbps – 10 Gbps",
+        "_10_GBPS_TO_100_GBPS":   "10 Gbps – 100 Gbps",
+        "OVER_100_GBPS":          "> 100 Gbps  🚨",
+    }
+    try:
+        parsed = json.loads(json_str)
+        if "result" in parsed and "summary_0" in parsed["result"]:
+            summary = parsed["result"]["summary_0"]
+        elif "summary_0" in parsed:
+            summary = parsed["summary_0"]
+        else:
+            summary = parsed
+
+        if not isinstance(summary, dict) or not summary:
+            return "No significant L3 attack data detected."
+
+        lines = []
+        for key, val in summary.items():
+            label = BUCKET_LABELS.get(key, key.replace("_", " ").title())
+            try:
+                pct = float(val)
+                # Build a simple ASCII bar
+                bar_len = max(1, round(pct / 5))
+                bar = "█" * bar_len
+                lines.append(f"**{label}:** {pct:.1f}%  {bar}")
+            except (ValueError, TypeError):
+                lines.append(f"**{label}:** {val}")
+
+        return "\n".join(lines) if lines else "L3 attack distribution: no data."
+    except Exception as e:
+        logger.error(f"Error formatting L3 summary: {e}")
+        return json_str
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # Public helpers  (each opens its own session for simplicity / thread-safety)
 # ────────────────────────────────────────────────────────────────────────────────
@@ -288,7 +332,7 @@ async def get_l3_attack_summary() -> str:
             "dimension": "summary/bitrate",
         })
     raw_text = _extract_text(data)
-    return raw_text # Keep raw for now or format if needed
+    return _format_l3_attack_summary(raw_text) if raw_text else ""
 
 
 async def get_internet_traffic_summary() -> str:

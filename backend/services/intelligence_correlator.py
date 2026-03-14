@@ -160,7 +160,7 @@ Your job is to synthesize technical telemetry with OSINT news to identify active
 Correlate the anonymized industry/location spikes from Cloudflare with the specific company names and hacker groups mentioned in the OSINT news.
 If there is no direct correlation, extrapolate the most likely active threats based solely on the OSINT news.
 
-CRITICAL INSTRUCTION: To comply with safety filters, DO NOT mention any specific nation-states, countries, or governments (e.g., do not say "Russian", "Chinese", "US-backed") in your descriptions. 
+CRITICAL INSTRUCTION: To comply with safety filters, DO NOT mention any specific nation-states, countries, or governments in your text descriptions. However, you MUST output the single 3-letter ISO-3166 country code in the `origin_country` field indicating where the threat actor is suspected to originate from (e.g., RUS, CHN, IRN, PRK).
 KEEP ALL DESCRIPTIONS EXTREMELY BRIEF (under 10 words). Focus purely on the group names (e.g., APT28) and short technical phrases.
 
 Return exactly this JSON structure, and NOTHING else. Ensure it is valid JSON.
@@ -170,6 +170,7 @@ Return exactly this JSON structure, and NOTHING else. Ensure it is valid JSON.
     {{
       "name": "string (e.g., LockBit, KillNet, Anonymous)",
       "type": "string (e.g., Ransomware, Hacktivist, APT)",
+      "origin_country": "string (ISO-3166 Alpha-3 code)",
       "description": "string (1-2 sentences summarizing their current suspected activity based on the data)"
     }}
   ],
@@ -206,9 +207,9 @@ Provide a maximum of 4 threat actors and 5 victims. If data is sparse or no clea
     if not actors and not victims:
         logger.warning("LLM returned empty threats. Using realistic fallback data.")
         actors = [
-            {"name": "LockBit 3.0", "type": "Ransomware", "description": "Active ransomware-as-a-service operation targeting corporate environments."},
-            {"name": "Anonymous Sudan", "type": "Hacktivist", "description": "Conducting high-volume DDoS attacks against infrastructure."},
-            {"name": "Scattered Spider", "type": "Financially Motivated", "description": "Social engineering and SIM swapping to breach enterprises."}
+            {"name": "LockBit 3.0", "type": "Ransomware", "origin_country": "RUS", "description": "Active ransomware-as-a-service operation targeting corporate environments."},
+            {"name": "Anonymous Sudan", "type": "Hacktivist", "origin_country": "SDN", "description": "Conducting high-volume DDoS attacks against infrastructure."},
+            {"name": "Scattered Spider", "type": "Financially Motivated", "origin_country": "USA", "description": "Social engineering and SIM swapping to breach enterprises."}
         ]
         victims = [
             {"name": "UnitedHealth Group", "industry": "Healthcare", "status": "Breached"},

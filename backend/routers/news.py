@@ -10,6 +10,7 @@ from services.mcp_client import (
     get_internet_traffic_summary,
     get_global_outages,
     get_attack_summary,
+    get_l3_attack_summary,
 )
 from services.intelligence_correlator import get_correlated_threat_intelligence
 import asyncio
@@ -130,27 +131,30 @@ async def search_news(
 async def get_radar_intelligence():
     """
     Fetch real-time Cloudflare Radar intelligence:
-    global internet traffic, active outages, and DDoS/attack trends.
-    All three calls run concurrently.
+    global internet traffic, active outages, and DDoS/attack trends (L3 and L7).
+    All calls run concurrently.
     """
     try:
-        traffic, outages, attacks = await asyncio.gather(
+        traffic, outages, attacks, l3_attacks = await asyncio.gather(
             get_internet_traffic_summary(),
             get_global_outages(),
             get_attack_summary(),
+            get_l3_attack_summary(),
             return_exceptions=True,
         )
         return {
             "traffic": traffic if isinstance(traffic, str) else "",
             "outages": outages if isinstance(outages, str) else "",
             "attacks": attacks if isinstance(attacks, str) else "",
+            "l3_attacks": l3_attacks if isinstance(l3_attacks, str) else "",
         }
     except Exception as e:
         logger.error(f"Error fetching Cloudflare Radar data: {e}")
         return {
             "traffic": "",
             "outages": "",
-            "attacks": ""
+            "attacks": "",
+            "l3_attacks": ""
         }
 
 @router.post("/radar/persist")
@@ -294,3 +298,16 @@ async def get_radar_history(
     except Exception as e:
         logger.error(f"Error fetching radar history from ES: {e}")
         return {"total": 0, "events": []}
+
+@router.get("/radar/threats/{actor_name}/details")
+async def get_threat_actor_mcp_dossier(actor_name: str):
+    """
+    Fetch extended dossier on the threat actor using VirusTotal MCP tools.
+    """
+    try:
+        from services.generic_mcp_client import get_threat_actor_dossier
+        dossier = await get_threat_actor_dossier(actor_name)
+        return {"actor": actor_name, "dossier": dossier}
+    except Exception as e:
+        logger.error(f"Error fetching MCP dossier for {actor_name}: {e}")
+        return {"actor": actor_name, "dossier": f"Error: {e}"}
