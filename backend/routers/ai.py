@@ -31,7 +31,7 @@ async def summarize_text(req: SummarizeRequest):
 
     base_prompt = (
         f"Provide a comprehensive summary in Spanish with exactly 3 bullet points of the following Main Event intelligence snippet.\n"
-        f"Expand your explanation on each bullet point to ensure the total response covers AT LEAST 60 words.\n"
+        f"Expand your explanation on each bullet point to ensure the total response covers AT LEAST 100 words.\n"
         f"Following the bullets, provide a brief 1-sentence paragraph of strategic implications.\n"
         f"CRITICAL: Your analysis MUST be detailed and comprehensive. Ensure you finish your sentences and thoughts completely. Do NOT cut off mid-sentence.\n\n"
         f"**Main Event:**\n{req.text}\n"
@@ -82,7 +82,7 @@ async def summarize_text(req: SummarizeRequest):
             # Default to OpenAI
             client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5-mini",
                 messages=[
                     {"role": "system", "content": "You are a senior intelligence analyst. Provide comprehensive summaries (at least 100 words). Expand explanations to meet this length. Do not leave sentences unfinished."},
                     {"role": "user", "content": prompt}
