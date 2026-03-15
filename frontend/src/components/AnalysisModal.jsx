@@ -8,7 +8,7 @@ export default function AnalysisModal({ article, contextArticles, onClose }) {
     if (!article) return null;
 
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['summary_200_words', article.id],
+        queryKey: ['summary_v2', article.id],
         queryFn: () => {
             const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
             const context = (contextArticles || [])
@@ -50,7 +50,14 @@ export default function AnalysisModal({ article, contextArticles, onClose }) {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold leading-tight">AI Executive Summary</h3>
-                                <p className="text-xs text-text-muted font-mono mt-0.5">TARGET_ID: {article.id.substring(0, 8).toUpperCase()}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <p className="text-xs text-text-muted font-mono">TARGET_ID: {article.id.substring(0, 8).toUpperCase()}</p>
+                                    {data?.model_used && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono bg-accent-purple/15 text-accent-purple border border-accent-purple/25">
+                                            ⚡ {data.model_used}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
