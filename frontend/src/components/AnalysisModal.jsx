@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, BrainCircuit, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { summarizeText } from '../api/client';
+import ReactMarkdown from 'react-markdown';
 
 export default function AnalysisModal({ article, contextArticles, onClose }) {
     if (!article) return null;
@@ -86,12 +87,15 @@ export default function AnalysisModal({ article, contextArticles, onClose }) {
                                 Failed to execute neural summarization. Disconnected from AI cluster.
                             </div>
                         ) : (
-                            <div className="prose prose-p:text-sm prose-li:text-sm max-w-none prose-li:marker:text-accent-purple/70">
-                                <div
-                                    className="space-y-4 whitespace-pre-wrap leading-relaxed text-text-base"
-                                >
-                                    {data?.summary}
-                                </div>
+                            <div className="prose prose-sm prose-invert max-w-none
+                                prose-p:text-text-base prose-p:leading-relaxed
+                                prose-li:text-text-base prose-li:leading-relaxed
+                                prose-li:marker:text-accent-purple
+                                prose-strong:text-text-base prose-strong:font-semibold
+                                prose-a:text-accent-purple prose-a:no-underline hover:prose-a:underline
+                                prose-headings:text-text-base
+                            ">
+                                <ReactMarkdown>{data?.summary}</ReactMarkdown>
                             </div>
                         )}
                     </div>
