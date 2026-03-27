@@ -162,7 +162,31 @@ In the Cloudflare Zero Trust Dashboard -> Tunnels -> **Public Hostname**:
 
 ---
 
-## 6. Post-Deployment Checklist
+## 6. Auto-Start Configuration (Recommended)
+
+To ensure the application starts automatically whenever the Ubuntu machine reboots, we have provided an auto-start script and a `systemd` service configuration in the `deploy/` directory.
+
+1. **Review Paths**: The files `deploy/startup.sh` and `deploy/geo-app.service` are already pre-configured for the `jec` user and the `/home/jec/Desktop/GeoIntel-360` directory.
+2. **Make the Script Executable**:
+   ```bash
+   cd /home/jec/Desktop/GeoIntel-360
+   chmod +x deploy/startup.sh
+   ```
+3. **Install the Systemd Service**:
+   ```bash
+   sudo cp deploy/geo-app.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable geo-app.service
+   sudo systemctl start geo-app.service
+   ```
+4. **Check the Status**:
+   ```bash
+   sudo systemctl status geo-app.service
+   ```
+
+---
+
+## 7. Post-Deployment Checklist
 1. Review the Cloudflare Tunnels dashboard, making sure the connector shows as "Healthy".
-2. Ensure both the Python backend (`uvicorn`) and the frontend (`serve` or `npm run dev`) are actively running.
+2. Ensure both the Python backend (`uvicorn`) and the frontend (`serve` or `npm run dev`) are actively running (via the auto-start service).
 3. Advise all users or connected devices to **clear their browser cache** (`Ctrl + Shift + R` or `Cmd + Shift + R`). Failing to do so can result in browsers blocking requests due to cached HTTP requests (Mixed Content warnings).

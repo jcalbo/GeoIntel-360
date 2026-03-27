@@ -56,3 +56,6 @@ dist-ssr/
 
 # Database/Logs
 *.log
+
+# Deployment
+deploy/
