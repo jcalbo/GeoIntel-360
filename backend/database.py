@@ -60,6 +60,27 @@ async def init_db():
         else:
             logger.info(f"Index {RADAR_INDEX_NAME} already exists.")
             
+        # Initialize Radar threats index
+        threats_exists = await es_client.indices.exists(index="geointel_radar_threats")
+        if not threats_exists:
+            threats_mapping = {
+                "mappings": {
+                    "date_detection": False,
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "timestamp": {"type": "date"},
+                        "name": {"type": "keyword"},
+                        "threat_type": {"type": "keyword"},
+                        "description": {"type": "text"},
+                        "metadata": {"type": "keyword"}
+                    }
+                }
+            }
+            await es_client.indices.create(index="geointel_radar_threats", body=threats_mapping)
+            logger.info(f"Created index: geointel_radar_threats")
+        else:
+            logger.info(f"Index geointel_radar_threats already exists.")
+            
     except Exception as e:
         logger.error(f"Error initializing Elasticsearch: {e}")
 
