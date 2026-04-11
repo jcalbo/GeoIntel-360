@@ -15,7 +15,25 @@ RADAR_INDEX_NAME = "geointel_radar_events"
 es_client = AsyncElasticsearch(ES_URL)
 
 async def init_db():
-    """Initialize Elasticsearch index with proper mappings if it doesn't exist."""
+    """Initialize Elasticsearch index with proper mappings if it doesn't exist.
+    Retries until Elasticsearch is reachable to handle race conditions on startup."""
+    import asyncio
+    max_retries = 10
+    retry_delay = 5  # seconds
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Ping to confirm ES is up before proceeding
+            if not await es_client.ping():
+                raise ConnectionError("Elasticsearch ping failed")
+            break
+        except Exception as e:
+            if attempt == max_retries:
+                logger.error(f"Elasticsearch not available after {max_retries} attempts. Giving up: {e}")
+                return
+            logger.warning(f"Elasticsearch not ready (attempt {attempt}/{max_retries}), retrying in {retry_delay}s... ({e})")
+            await asyncio.sleep(retry_delay)
+
     try:
         exists = await es_client.indices.exists(index=INDEX_NAME)
         if not exists:
